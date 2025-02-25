@@ -1,0 +1,172 @@
+import tkinter as tk
+from tkinter import messagebox, simpledialog
+
+# Implementa encapsulación mediante atributos privados (_titulo, _autor, _BookID)
+class Libro:
+    def __init__(self, titulo, autor, BookID):
+        self._titulo = titulo
+        self._autor = autor
+        self._BookID = BookID
+        self._prestado_a = None
+
+    def prestar(self, miembro):
+        """Método para prestar el libro a un miembro."""
+        if self._prestado_a is None:
+            self._prestado_a = miembro
+            return f"El libro '{self._titulo}' ha sido prestado a {miembro.nombre}."
+        return f"El libro '{self._titulo}' ya está prestado a {self._prestado_a.nombre}."
+
+    def devolver(self):
+        """Método para devolver el libro prestado."""
+        if self._prestado_a is not None:
+            nombre_miembro = self._prestado_a.nombre
+            self._prestado_a = None
+            return f"El libro '{self._titulo}' ha sido devuelto por {nombre_miembro}."
+        return f"El libro '{self._titulo}' no estaba prestado."
+
+    def __str__(self):       # Polimorfismo: sobrescribe __str__ para representar el libro como texto.
+        estado = f"Prestado a {self._prestado_a.nombre}" if self._prestado_a else "Disponible"
+        return f"Titulo: {self._titulo}, Autor: {self._autor}, BookID: {self._BookID}, Estado: {estado}"
+
+    @property
+    def BookID(self):
+        return self._BookID
+
+# Clase que representa a un miembro de la biblioteca
+class Miembro:
+    def __init__(self, nombre, id_miembro):  #Aqui tambien aplica el encapsulamiento en (nombre , miembro)
+        self._nombre = nombre
+        self._id_miembro = id_miembro
+
+    def __str__(self):
+        return f"Miembro: {self._nombre}, ID: {self._id_miembro}"
+
+    @property
+    def nombre(self):
+        return self._nombre
+
+    @property
+    def id_miembro(self):
+        return self._id_miembro
+
+# Clase que representa la biblioteca y su gestión
+class Biblioteca:
+    def __init__(self):
+        self._catalogo = []
+        self._miembros = []
+
+    def anadir_libro(self, libro):
+        """Añadir un nuevo libro al catálogo."""
+        self._catalogo.append(libro)
+        messagebox.showinfo("Éxito", f"Libro '{libro._titulo}' agregado correctamente.")
+
+    def get_libros(self):
+        """Obtener la lista de libros en el catálogo."""
+        return [str(libro) for libro in self._catalogo]
+
+    def agregar_miembro(self, miembro):
+        """Añadir un nuevo miembro a la biblioteca."""
+        self._miembros.append(miembro)
+        messagebox.showinfo("Éxito", f"Miembro '{miembro.nombre}' agregado correctamente.")
+
+    def prestar_libro(self, BookID, id_miembro):
+        """Prestar un libro a un miembro."""
+        miembro = next((m for m in self._miembros if m.id_miembro == id_miembro), None)
+        if miembro is None:
+            messagebox.showerror("Error", "Miembro no encontrado.")
+            return
+        for libro in self._catalogo:
+            if libro.BookID == BookID:
+                messagebox.showinfo("Préstamo", libro.prestar(miembro))
+                return
+        messagebox.showerror("Error", "Libro no encontrado.")
+
+    def devolver_libro(self, BookID):
+        """Devolver un libro prestado."""
+        for libro in self._catalogo:
+            if libro.BookID == BookID:
+                messagebox.showinfo("Devolución", libro.devolver())
+                return
+        messagebox.showerror("Error", "Libro no encontrado.")
+        
+    def actualizar_libro(self, BookID):
+        """Permite actualizar el título o autor de un libro."""
+        if not self._catalogo:  # Verifica si el catálogo está vacío
+            messagebox.showerror("Error", "No hay libros en el catálogo.")
+            return
+
+        for libro in self._catalogo:
+            if str(libro.BookID) == str(BookID):  # Comparación segura como strings
+                nuevo_titulo = simpledialog.askstring("Actualizar Libro", f"Nuevo título (Actual: {libro._titulo}):")
+                nuevo_autor = simpledialog.askstring("Actualizar Libro", f"Nuevo autor (Actual: {libro._autor}):")
+
+                if nuevo_titulo:
+                    libro._titulo = nuevo_titulo  # Actualiza el título
+
+                if nuevo_autor:
+                    libro._autor = nuevo_autor  # Actualiza el autor
+            
+                messagebox.showinfo("Actualización", f"Libro '{BookID}' actualizado correctamente.")
+                return
+
+        messagebox.showerror("Error", f"Libro con ID '{BookID}' no encontrado.")
+
+# Crear la biblioteca y la interfaz gráfica
+biblioteca = Biblioteca()
+root = tk.Tk()
+root.title("Gestión de Biblioteca")
+
+frame = tk.Frame(root)
+frame.pack(padx=50, pady=50)
+
+# Funciones para gestionar la biblioteca
+def agregar_libro():
+    titulo = simpledialog.askstring("Agregar Libro", "Ingrese el título del libro:")
+    autor = simpledialog.askstring("Agregar Libro", "Ingrese el autor del libro:")
+    BookID = simpledialog.askstring("Agregar Libro", "Ingrese el ID del libro:")
+    if titulo and autor and BookID:
+        biblioteca.anadir_libro(Libro(titulo, autor, BookID))
+
+def agregar_miembro():
+    nombre = simpledialog.askstring("Agregar Miembro", "Ingrese el nombre del miembro:")
+    id_miembro = simpledialog.askstring("Agregar Miembro", "Ingrese el ID del miembro:")
+    if nombre and id_miembro:
+        biblioteca.agregar_miembro(Miembro(nombre, id_miembro))
+
+def prestar_libro():
+    BookID = simpledialog.askstring("Prestar Libro", "Ingrese el ID del libro a prestar:")
+    id_miembro = simpledialog.askstring("Prestar Libro", "Ingrese el ID del miembro:")
+    if BookID and id_miembro:
+        biblioteca.prestar_libro(BookID, id_miembro)
+
+def devolver_libro():
+    BookID = simpledialog.askstring("Devolver Libro", "Ingrese el ID del libro a devolver:")
+    if BookID:
+        biblioteca.devolver_libro(BookID)
+    
+def actualizar_libro():
+    BookID = simpledialog.askstring("Actualizar Libro", "Ingrese ID del libro para actualizar:")
+    if BookID:
+        biblioteca.actualizar_libro(BookID)
+
+# Botones de la interfaz gráfica
+btn_agregar = tk.Button(frame, text="Agregar Libro", command=agregar_libro, width=20)
+btn_agregar.grid(row=2, column=0, pady=5)
+
+btn_mostrar = tk.Button(frame, text="Mostrar Catálogo", command=lambda: messagebox.showinfo("Catálogo", "\n".join(biblioteca.get_libros())), width=20)
+btn_mostrar.grid(row=3, column=0, pady=5)
+
+btn_agregar_miembro = tk.Button(frame, text="Agregar Miembro", command=agregar_miembro, width=20)
+btn_agregar_miembro.grid(row=2, column=1, pady=5)
+
+btn_prestar = tk.Button(frame, text="Prestar Libro", command=prestar_libro, width=20)
+btn_prestar.grid(row=3, column=1, pady=5)
+
+btn_devolver = tk.Button(frame, text="Devolver Libro", command=devolver_libro, width=20)
+btn_devolver.grid(row=2, column=3, pady=5)
+
+btn_actualizar = tk.Button(frame, text = "Actualizar Libro", command = actualizar_libro, width = 20)
+btn_actualizar.grid(row=3, column=3, pady=5)
+
+# Ejecutar la interfaz
+tk.mainloop()
